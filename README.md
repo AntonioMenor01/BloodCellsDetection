@@ -1,5 +1,9 @@
-# Analizador Hematológico AI
+# Analizador Hematológico AI 
+**(Web para probar el analizador: https://huggingface.co/spaces/AntonioMenor01/clasificador-celulas )**
 
+Puede estar pausada si lleva mucho sin utilizarse.
+
+## Introducción
 Este proyecto utiliza **Deep Learning** para la clasificación automática de glóbulos blancos (leucocitos) a partir de imágenes de frotis de sangre. El modelo está basado en la arquitectura **MobileNetV2** y se despliega mediante una interfaz web interactiva.
 
 ##  Funcionalidades

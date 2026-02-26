@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hematology AI | Analizador de Células</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #2563eb;
+            --secondary: #64748b;
+            --success: #22c55e;
+            --bg: #f8fafc;
+            --card: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0e7ff 0%, #f8fafc 100%);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: var(--card);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            width: 90%;
+            max-width: 450px;
+            text-align: center;
+        }
+
+        header { margin-bottom: 2rem; }
+        header i { font-size: 3rem; color: var(--primary); margin-bottom: 1rem; }
+        h1 { margin: 0; font-size: 1.75rem; color: #1e293b; letter-spacing: -0.025em; }
+        p.subtitle { color: var(--secondary); margin-top: 0.5rem; font-size: 0.9rem; }
+
+        .upload-area {
+            border: 2px dashed #cbd5e1;
+            background: #f1f5f9;
+            padding: 2rem;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-area:hover {
+            border-color: var(--primary);
+            background: #eff6ff;
+            transform: translateY(-2px);
+        }
+
+        #preview {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 12px;
+            display: none;
+            margin: 0 auto;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        #btn-predict {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: none;
+            margin-top: 1.5rem;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
+        }
+
+        #btn-predict:hover { background: #1d4ed8; transform: translateY(-1px); }
+        #btn-predict:active { transform: translateY(0); }
+
+        #resultado {
+            margin-top: 1.5rem;
+            border-radius: 12px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.4s ease;
+        }
+
+        #resultado.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .result-card {
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            padding: 1.25rem;
+            border-radius: 12px;
+            text-align: left;
+        }
+
+        .result-label { color: #166534; font-size: 0.85rem; font-weight: 600; text-transform: uppercase; }
+        .result-value { display: block; font-size: 1.4rem; color: #14532d; font-weight: 700; margin-top: 0.25rem; }
+
+        .confidence-bar-container {
+            background: #dcfce7;
+            height: 8px;
+            border-radius: 4px;
+            margin-top: 1rem;
+            overflow: hidden;
+        }
+
+        .confidence-bar {
+            background: var(--success);
+            height: 100%;
+            width: 0%;
+            transition: width 1s ease-out;
+        }
+
+        .loader {
+            display: none;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 1rem auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <i class="fas fa-microscope"></i>
+        <h1>Hematology AI</h1>
+        <p class="subtitle">Identificación de glóbulos blancos mediante Deep Learning</p>
+    </header>
+
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <div id="upload-content">
+            <i class="fas fa-cloud-upload-alt" style="font-size: 2rem; color: #94a3b8; margin-bottom: 10px;"></i>
+            <p style="margin:0; font-weight: 500;">Arrastra o selecciona imagen</p>
+        </div>
+        <input type="file" id="fileInput" hidden accept="image/*">
+        <img id="preview">
+    </div>
+
+    <button id="btn-predict">
+        <i class="fas fa-wand-sparkles" style="margin-right: 8px;"></i> Analizar Muestra
+    </button>
+
+    <div class="loader" id="loader"></div>
+    <div id="resultado"></div>
+</div>
+
+<script>
+    const fileInput = document.getElementById('fileInput');
+    const preview = document.getElementById('preview');
+    const btn = document.getElementById('btn-predict');
+    const resultado = document.getElementById('resultado');
+    const loader = document.getElementById('loader');
+    const uploadContent = document.getElementById('upload-content');
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                preview.src = event.target.result;
+                preview.style.display = 'block';
+                uploadContent.style.display = 'none';
+                btn.style.display = 'block';
+                resultado.classList.remove('show');
+            }
+            reader.readAsDataURL(file);
+        }
+    };
+
+    btn.onclick = async () => {
+        const file = fileInput.files[0];
+        const formData = new FormData();
+        formData.append('file', file);
+
+        loader.style.display = 'block';
+        btn.disabled = true;
+        resultado.classList.remove('show');
+
+        try {
+            const response = await fetch('/predict', { method: 'POST', body: formData });
+            const data = await response.json();
+
+            if (data.error) throw new Error(data.error);
+
+            const confPercent = (data.confidence * 100).toFixed(2);
+
+            resultado.innerHTML = `
+                <div class="result-card">
+                    <span class="result-label"><i class="fas fa-tag"></i> Clasificación</span>
+                    <span class="result-value">${data.class}</span>
+                    <div style="margin-top: 1rem; display: flex; justify-content: space-between; font-size: 0.85rem;">
+                        <span>Confianza</span>
+                        <strong>${confPercent}%</strong>
+                    </div>
+                    <div class="confidence-bar-container">
+                        <div class="confidence-bar" style="width: ${confPercent}%"></div>
+                    </div>
+                </div>
+            `;
+
+            resultado.classList.add('show');
+        } catch (err) {
+            resultado.innerHTML = `<div style="color: #ef4444; font-size: 0.9rem;">⚠️ Error: ${err.message}</div>`;
+            resultado.classList.add('show');
+        } finally {
+            loader.style.display = 'none';
+            btn.disabled = false;
+        }
+    };
+</script>
+
+</body>
+</html>

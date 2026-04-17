@@ -29,8 +29,8 @@ blood_cell_classifier/
 │   ├── evaluate.py           # Evaluación y generación de métricas
 │   └── predict.py            # Script para predicción local manual
 ├── static/
-│   └── index.html            # Interfaz de usuario (Frontend moderno)
-├── results/                  # Gráficas de rendimiento y métricas
+│   └── index.html            # Interfaz de usuario 
+├── results/                  
 │   └── confusion_matrix.png  # Matriz de confusión generada
 ├── app.py                    # Servidor Flask (API y backend de la app)
 ├── environment.yml           # Configuración del entorno Conda
